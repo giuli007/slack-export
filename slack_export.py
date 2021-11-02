@@ -1526,15 +1526,27 @@ def bootstrapKeyValues():
     print(u"Found {0} Users".format(len(users)))
     sleep(1)
     
-    channels = slack.channels.list().body['channels']
+    def get_conversations(types, exclude_archived=True):
+        next_cursor = True
+        conversations = []
+        while next_cursor:
+            args = {"exclude_archived": exclude_archived, "types": types, "limit": 200}
+            if type(next_cursor) == str:
+                args["cursor"] = next_cursor
+            conversations_res = slack.conversations.list(**args)
+            conversations += conversations_res.body["channels"]
+            next_cursor = conversations_res.body.get('response_metadata', {}).get('next_cursor', None)
+        return conversations
+
+    channels = get_conversations(types="public_channel")
     print(u"Found {0} Public Channels".format(len(channels)))
     sleep(1)
 
-    groups = slack.groups.list().body['groups']
+    groups = get_conversations("private_channel")
     print(u"Found {0} Private Channels or Group DMs".format(len(groups)))
     sleep(1)
 
-    dms = slack.im.list().body['ims']
+    dms = get_conversations("im")
     print(u"Found {0} 1:1 DM conversations\n".format(len(dms)))
     sleep(1)
 
