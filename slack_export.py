@@ -135,6 +135,7 @@ class BaseAPI(object):
 
         response = Response(response.text)
         if not response.successful:
+            print("error body: {}".format(response.body, file=sys.stderr))
             raise Error(response.error)
 
         return response
@@ -1292,7 +1293,7 @@ def getHistory(pageableObject, channelId, pageSize = 1000):
                 channel = channelId,
                 latest    = lastTimestamp,
                 oldest    = 0,
-                count     = pageSize
+                limit     = pageSize
             ).body
         except requests.exceptions.HTTPError as e:
             if e.response.status_code == 429:
@@ -1303,7 +1304,7 @@ def getHistory(pageableObject, channelId, pageSize = 1000):
                     channel = channelId,
                     latest    = lastTimestamp,
                     oldest    = 0,
-                    count     = pageSize
+                    limit     = pageSize
                 ).body
 
         messages.extend(response['messages'])
@@ -1416,7 +1417,7 @@ def fetchPublicChannels(channels):
         channelDir = channel['name'].encode('utf-8')
         print(u"Fetching history for Public Channel: {0}".format(channelDir))
         mkdir( channelDir )
-        messages = getHistory(slack.channels, channel['id'])
+        messages = getHistory(slack.conversations, channel['id'])
         parseMessages( channelDir, messages, 'channel')
 
 # write channels.json file
@@ -1471,7 +1472,7 @@ def fetchDirectMessages(dms):
         print(u"Fetching 1:1 DMs with {0}".format(name))
         dmId = dm['id']
         mkdir(dmId)
-        messages = getHistory(slack.im, dm['id'])
+        messages = getHistory(slack.conversations, dm['id'])
         parseMessages( dmId, messages, "im" )
 
 def promptForGroups(groups):
@@ -1495,7 +1496,7 @@ def fetchGroups(groups):
         mkdir(groupDir)
         messages = []
         print(u"Fetching history for Private Channel / Group DM: {0}".format(group['name']))
-        messages = getHistory(slack.groups, group['id'])
+        messages = getHistory(slack.conversations, group['id'])
         parseMessages( groupDir, messages, 'group' )
 
 # fetch all users for the channel and return a map userId -> userName
